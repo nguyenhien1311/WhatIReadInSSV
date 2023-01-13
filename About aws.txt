@@ -1,0 +1,388 @@
+1,Tổng quan về AWS
+ -Cloud computing đang là xu thế , AWS là nền tảng hiện đại và được sử dụng rộng rãi nhất cung cấp hơn 200 dịch vụ từ các trung tâm dữ liệu cho khách hàng.
+ -Có 3 phương thức để truy cập vào AWS services : 
+	+ AWS Management console : truy cập vào từ giao diện web của AWS
+	+ AWS Command line Interface (CLI): Truy cập  thông qua màn hình cmd
+	+ AWS Software Development Kits (SDKs): Kết hợp với các ngôn ngữ khác để phát triển (Nodejs,...)
+ -Có thể tạo tài khoản AWS , sẽ đưcọ miễn phí trong 1 năm đầu và có thể sử dụng các dịch vụ trong khoảng cho phép của AWS
+ -AWS cung cấp dịch vụ về cơ sở hạ tầng cho khách hàng của họ trên toàn cầu dựa trên các Regions và Availability zones(AZs).Hiện nay có tổng cộng 25 Regions và 81 AZs, mỗi Regions là bao gồm 2->6 AZs (thông thường là 3)
+ -Có thể coi mỗi Regions là 1 cụm các datacenter tách biệt để đảm bảo an toàn khi gặp sự cố.
+ -AZs bao gồm 1 hoặc nhiều center riêng biệt , mỗi center có hệ thống điện, làm mát ,... chúng được kết nối với nhau và kết nối với mạng với băng thông cao và độ trễ thấp
+ -Khi chọn Regions nên chọn Regions ở gần để giảm độ trễ (latency).
+ -Có 3 models phổ biến trong Cloud computing là:
+	+ IaaS (Infrastructure as a Service) : là Provider cung cấp cho bạn phần cứng ảo hóa. VD: AWS EC2,Google GoogleEngine(GCE),...
+	+ PaaS (Platform as a Service) : là Provider cung cấp dịch vụ dưới dạng platforms hay tool để phát triển application , bạn không cần quan tâm đến phần cứng , network,... VD: AWS Elastic Beanstalk, Heroku
+	+ SaaS (Software as a Service) : là Provider cung cấp Software hay application. VD : Google Apps , Dropbox
+	+ On-premises là mô hình phần mền được cài đặt trên server của chính doanh nghiệp , giúp doanh nghiệp toàn quyền kiểm soát.
+ -Tất cả các model đều có điểm mạnh và điểm yếu riêng biệt.Dịch vụ càng tiện lợi (more convenient) thì bạn càng ít quyền kiểm soát (less control)
+2,IAM cà CLI
+ -IAM (Identify and Access Management) là công cụ để kiểm soát quyền truye cập của cá nhân hay tổ chức đến tài nguyên của AWS của bạn 1 cách an toàn.
+ -AWS IAM được thiết kế để quản lý users , groups , roles , policies để quản lý truy cập AWS resources
+ -IAM có 2 nhiệm vụ chính là :
+	+ Authentication : Xác thực người dùng
+	+ Authorization : Phân quyền người dùng 
+ -Khi bạn tạo tài khoản AWS đầu tiên thì tài khoản đó là root user, mail và mật khẩu được gọi là "root account credentials"
+ -Root account có quyền cao nhất bào gồm cả thông tin billing.
+ -AWS khuyên không nên sử dụng root account hàng ngày mà nên tạo các IAM user thùy thuộc vào role của nó.
+ -Các thành phần chính của IAM:
+	+ User : user có thể truy cập vào resources với username - password hoặc access key và secret key
+	+ Access key : Chuỗi chữ và số có độ dài 20 ký tự có thể hiểu giống như UserId
+	+ Secret key : Chuỗi chữ và số có độ dài 40 ký tự có thể hiểu giống như password
+	(Access key và Secret key thường được dùng với nhau để khởi tạo API, SDK, và xác thực CLI)
+	+ Password policy : Định nghĩa chính sách về mật khẩu như : độ phức tạp , thời hạn ,...
+	+ Multi-Factor Authentication (MFA): Thêm 1 lớp bảo vệ account, khi login sẽ yêu cầu nhập thêm chuỗi 6 ký tự. Thông thường MFA được bật lên cho root user để đảm bảo an toàn.
+	+ Group : một group là 1 collection các IAM user
+	+ Role : quản lý IAM có những quyền truy cập đến resources nào của AWS
+	+ Policy : là JSON format , mỗi Policy có những tính năng và quyền hạn (permission) nhật định gắn User , Group , Roles  trong IAM
+ - Access và Secret key được generate 1 lần , bạn có thể tải xuống dười dạng CSV file. Khi mất hoặc quên 2 key trên chỉ có cách duy nhất là tạo lại key mới.
+ - CLI hay Command line Interface giúp người dùng truy cập dịch vụ qua màn hình cmd. Chỉ với 1 công cụ để tải xuống và cấu hình , bạn có thể kiểm soát nhiều dịch vụ AWS bằng một dòng lệnh và tự động hóa chúng thông qua tập lệnh.
+ Exam tips : 
+		_ AWS IAM service là 1 global service (Không quan tâm đến region)
+		_ Khi tạo mới IAM users, user đó mặc đinh chưa được cấp quyền gì, cần thêm quyền cho user để có thể sử dụng các service của AWS
+		_ Group không thể nested
+		_ Có thể attach nhiều policy vào user
+3,Security Token là gì?
+ -STS (Security Token Service) là 1 web service cho phép người dùng gửi request tạm thời và cấp quyền một cách giới hạn cho IAM User.
+ -Token có thời gian hết hạn trong 1 tiếng và sau đó cần phải refresh lại.
+ VD về STS : Khi Alice không có quyền truy cập vào S3 tuy nhiên vì 1 lý do nào đó muốn Alice cso thể truy cập vào s3 trong 30 phút. Alice sẽ được cấp 1 token tạm thời(STS) để có thể truy cập được vào s3.Token này có hạn sử dụng trong 30 phút, sau khi hết hạn Alice sẽ không thể truy cập lại vào s3 nữa.
+ -STS Assume Role : 1 tập hợp các credentials mà ban j co thể sử dụng để tuy cập vào AWS resource mà bình thường bạn không có quyền truy cập, nó bao gồm 1 access key ID , 1 secret access key , 1 security token.
+ -AWS sử dụng bên thứ 3 để xác thực người dùng (Identity Federation) , user cần login qua bên thứ 3 để có thể access tài nguyên trên AWS.
+ -Federation (bên thứ 3) có thể là : 
+	+ Single Sign On
+	+ Cognito 
+	+ SAML 2.0
+ -Khi dùng Federation bạn không cần tạo IAM User nữa vì user hiện nay được quản lý bởi bên thứ 3
+4,Giới thiệu về EC2 (Amazon Elastic Compute Cloud)
+ -EC2 là dịch vụ web cung cấp năng lực điện toán bảo mật và có kích cỡ linh hoạt trên đám mây. Dịch vụ này được thiết kế để giúp các nhà phát triển dễ sử dụng điện toán đám mấy ở quy mô web hơn.
+ -EC2 cung cấp các ứng dụng máy tính ảo hóa có thể mở rộng về khả năng xử lý cùng các thành phần cứng ảo hóa như bộ nhớ máy tính , CPU , linh hoạt trong việc lựa chọn các phân vùng lưu trữ dữ liệu ở các nền tảng khác nhau và sự an toàn trong quản lý dịch vụ bởi kiến trúc ảo hóa đám mấy mạnh mẽ của AWS.
+ -Để hình dung thì EC2 như 1 máy tính có cả RAM , CPU , OS, EBS, Card mạng ,...
+ -Khi bạn tạo 1 instance EC2 thì cũng như là bạn đang quản lý 1 máy tính của mình
+ -Security group (SG) là 1 Fire wall ảo dùng để quản lý truy cập vào instance.
+ -Quản lý việc access EC2 theo IP , IP Range , hay port
+ -Thay đổi trong SG được apply ngay lập tức
+ -Mỗi group có tối đa 50 rules inbound và outbound
+ -Tối đa có 5 SG được attach cho 1 instance
+ -Statefull:
+	_Những traffic được allowed ở inbound thì cũng tự động được allowed ở outbound
+	_Vì thế không cần đặt outbound rule nếu rul eddos đã được định nghĩa ở inbound
+ -Ngay khi được tạo , SG sẽ mặc định block hết các traffic incomming và cho phép các traffic outgoing.
+5,Chi phí dịch vụ EC2 
+ -EC2 cung cấp 4 dịch vụ trả phí :
+	+ On-demand instance : dùng bao nhiêu trả bấy nhiêu, tính tiền theo thời gian thực tế , là option đắt nhất
+	+ Spot instances : đấu giá max_price cho 1 spot instance , instance sẽ có current_price và sẽ thay đổi theo thời gian ,AWS sẽ lấy lại spot khi mà max_price < current_price
+	+ Reserved instances : khi bạn cam kết chạy những ứng dụng trong thời gian dài hoặc trả tiền trước . Khi đó AWS sẽ giảm giá.
+	+ Delicated instance : thuê luôn phần cứng của AWS , có thể chon các cách tri trả mà bên AWS đưa ra : 
+		_ On-demand delicated hosts : dùng bao nhiêu trả bấy nhiêu
+		_ Delicated hosts Reservations : cam kết thời gian sử dụng hay trả tiền trước,... 
+		_ Saving plan : là cách tiết kiệm chi phí bằng cách cam kết mức sử dụng
+ -Keyword gặp trong exam : compliance requirement and use your existing server-bound software licenses.
+6,Địa chỉ IP trong EC2
+ - Mỗi EC2 cần được cung cấp địa chỉ IP để được đinh danh trên AWS và trên môi trường internet.
+ - Trong Networking có 2 loại IPs :
+	+ IPv4 : [0-225].[0-225].[0-225].[0-225] , phổ biến nhất hiện nay.
+	+ IPv6 : y:y:y:y:y:y:y:y , ra đời sau IPv4 và giải quyết tốt các bài toán về IoT
+ - Có 3 loại IP : 
+	+ Public : 
+		_ Một máy có public IP có nghĩa là đã được định danh trên internet
+		_ IP đó phải là unique trên mạng 
+		_ Public IP có thể được định danh vị trí địa lý (có thể biết được IP đó ở khu vực nào)
+ 	+ Private : 
+		_ Private IP tương ứng với máy được định danh trong private network 
+		_ IP đó phải là unique trong private network
+		_ 2 private network khác nhau có thể trùng IPs với nhau
+		_ Máy tính trong private network cần sử dụng Internet Gateway để có thể truy cập internet 
+	+ Elastic: 
+		_ Khi stop/start lại 1 EC2 instance , public IP sẽ bị thay đổi
+		_ Nếu muốn có 1 static IP thì hãy sử dụng Elastic IP
+		_ EIP là 1 IPv4 và có thể attach vào 1 EC2 instance
+		_ Mặc định mỗi account chỉ có thể tạo 5 EIP , có thể request AWS để tạo được nhiều hơn.
+		Note : Hạn chế sử dụng EIP , thay vì vậy hãy sử dụng DNS name kết hợp với Route 53 hoặc sử dụng 1 Load Balancer
+7,Placement Group (PG) trong EC2
+ - PG xác định cách mà các instance được đặt trên phần cứng cơ bản.Đây là cách để chúng ta yêu cầu phần cứng được đặt ở đâu.
+ - Clustered Placement Group :
+	+ Những EC2 được đặt gần nhau trong cùng 1 AZ hoặc là cùng trên 1 máy vật lý của AWS.
+	+ Phù hợp với những ứng dụng có độ trễ thấp
+	+ Tuy nhiên khi có lỗi phát sinh ở AZ thì tất cả các EC2 trong cluster có thể bị down
+ - Spread Placement Group : 
+	+ Pros : 
+		_ Các máy được đặt ở các AZ , hardware khác nhau để giảm thiểu risk khi 1 máy bị down thì các máy khác vẫn hoạt động tốt
+	+ Cons : 
+		_ Giới hạn 7 instance /mỗi AZ /mỗi Placement Group
+	+ Use case :
+		_ Dùng cho các application cần high avaibility , các instance chạy độc lập với nhau
+ - Partition Placement Group : 
+	+ Là kiểu kết hợp giữa 2 loại trên 
+	+ Các instance được triển khai thành các Partition Placement Group (PPG)và được chia thành các phân vùng (tối đa 7 trên mỗi AZ) và ,mỗi phân vùng chiếm 1 rack độc lập trong AZ/Region
+	+ Mỗi partition là một nhóm cơ sở hạ tầng biệt lập trong AWS
+	+ Các partition cũng là các nhóm đối tượng logic, các instance cùng chứa trong đó không chia sẻ cung 1 phân cứng cơ bản trên các partition khác nhau.
+	+ Nếu 1 partition duy nhất thất bại , bạn sẽ không bị mất tài nguyên trong 1 partition khác
+	+ Có xu hướng được sử dụng để triển khai cơ sở hạ tầng lớn.
+	+ Không hỗ trợ cho Delicated Hosts; với Delicated instances , có thể có thối đa 2 partitions
+8,Lưu trữ trong EC2
+ - Elastic Block Store (EBS) là dịch vụ lưu trữ dưới dạng block của AWS.1 EC2 có thể có nhiều EBS nhưng 1 EBS chỉ có thể được gán cho 1 EC2.Bạn có thể hiểu nó như là 1 USB hay là 1 ổ cứng ngoài
+	+ EBS trong AWS không cross AZ
+	+ AWS tính phí dựa trên dung lượn của EBS
+ - EBS volume bị lock trong 1 Ã nghĩa là : 
+	+ 1 EBS được tạo ở us-east-1a thì không thể attach vào EC2 instance ở us-east-1b
+	+ Để cross AZ được thì chúng ta cần phải snapshot volume đó.
+ - Khi tạo EC2 instance có thể kiểm soát việc xóa EBS khi instance bị xóa (terminate)
+	+ Mặc định , root EBS volume chọn xóa
+	+ Những EBS volume khác sẽ không bị xóa
+ - EBS snapshot : 
+	+ EBS snapshots tạo 1 bản backup (snapshot) của EBS volume của bạn
+	+ Có thể copy snapshot across AZ hoặc Region 
+ - Có 2 loại EBS đựa trên HDD và SSD :
+	+ Solid State Drive (SSD) :
+		_ General Pupose SSD (gp2/gp3)
+		_ Provisioned IPOS SSD (io1/io2)
+	+ Hard Disk Drive (HDD) :
+		_ Throughput Optimized HDD (st1)
+		_ Cold HDD (sc1)
+	Note : chi tiết cấu hình có thể xem ở đây (https://user-images.githubusercontent.com/29729545/162230387-c12857b1-4554-46b7-a465-861d2554e657.png)
+ - 1 EBS có thể attach vào nhiều instance trong 1 AZ tuy nhiên cũng có giới hạn :
+	+ EBS và các instance phải chung 1 AZ
+	+ EBS volume type : Provisioned IPOS SSD (io1/io2)
+ - AWS AMI (Amazon Machine Image) được sủ dụng để customize lại EC2 instance theo mình muong muốn :
+	+ Thêm software ,configuration, ...
+	+ Giúp thời gian Launch EC2 instance nhanh hơn
+ - AMI được tạo ỏ 1 region xác định và có thể copy sang các region khác 
+ - Có thể launch instances từ các AMI :
+	+ Public AMI : được cung cấp bởi AWS 
+	+ Own  AMI : là AMI được từ mình tạo ra theo ý muốn
+	+ Market AMI : là AMI do 1 bên khác , nếu bạn dùng sẽ có tính phí
+ - AWS EFS (Elastic File System)
+	+ Quản lý các NFS (Network File System) có thể muont vào nhiều EC2 instance 
+	+ Các EC2 instance ở các AZ khác nhau có thể dùng chung EFS
+	+ EFS có giá cao hơn EBS nhưng chỉ cần trả tiền cho dung lượng mà bạn sử dụng 
+	+ Use case : Sử dụng trong các ứng dụng Content manage , sharing data
+	+ Chỉ tương thích với EC2 có AMI base là Linux , không thể mount EFS vào EC2 có OS là Window
+	+ EFS có thể tự động scale 
+	+ Có thể cài đặt nếu trong 1 khoảng thời gian (vd : 30 days) không truy cập đến file đó thì file sẽ tự động bị move đến EFS-IA ( EFS infrequently Access)
+9,EC2 mở rộng 
+ - Một EC2 Instance khi launch bạn có thể stop/terminate nó đi 
+	+ stop : OS sẽ shutdown process , khi stop  thì sẽ không tính phí instance nữa mà sẽ tính phí EBS hay EIP liên quan đến instance đó 
+	+ terminate : xóa instance và giải phóng tài nguyên
+ - EC2 Hibernate :
+	+ Sảy ra trong quá trình stop instance từ stopping đến stopped 
+	+ EC2 Hibernate Là trạng thái của RAM sẽ được bảo quản 
+	+ Instance được khởi động nhanh hơn (OS không stopped/restarted)
+	+ RAM state được viết vào file ở root EBS
+	+ Root EBS phải được Encrypted
+	+ Phù hợp với các ứng dụng Long-running process / saving RAM state
+ - EC2 Nitro 
+	+ là 1 platform cho thế hệ sau của EC2 instances
+	+ được trang bị công nghệ Virtualization mới 
+	+ Performance tốt hơn 
+	+ bảo mật tốt hơn
+10, Giới thiệu về High Availability và Scalability
+ - Có thể hiểu đơn giản HA là cần tối thiểu 2 máy chủ chạy song song hoạt động liên tục .nêu 1 máy chủ gặp sự cố thì máy còn lại sẽ thay thế nhằm giúp hệ thống vẫn tiếp tục hoạt động bình thường.Khi có bất kỳ sự cố nào sảy ra trên VPS thì không gây ảnh hưởng hay làm mất mát dữ liệu nghiêm trọng
+ - HA cần những thành phần : 
+	+ Redundancy (dự phòng) : Đảm bảo rằng các thành phần , dữ liệu quan trọng của hệ thống đều có 1 exactly copy , có cùng dữ liệu và có thể tiếp quản trong trường hợp bị lỗi
+	+ Monitoring : Hệ thống cần được giám sát để có thể kiểm soát cũng như xử lý các tình huống gặp phải
+	+ Failover : khả năng chuyển đổi giữa hệ thống đang chạy sang hệ thống dự phòng.
+	+ Failback : khả năng chuyển lại hệ thống chính sau khi đã khắc phục sự cố
+ - Scalability là khả năng mở rộng của hệ thống một cách nhanh chóng để đối ứng với những vấn đề phát sinh.
+ - Có 2 loại Scalability :
+	+ Vertical Scalability : Mở rộng theo chiều sâu 
+	VD : Task ban đầu do 1 junio làm , leader thay 1 senior vào làm task.
+	+ Horizontal Scalability : Mở rộng theo chiều ngang
+	VD : Task ban đầu do 1 junio làm , leader cho thêm 3 ban junio nữa vào làm chung task.
+ - HA không phải là Scalability nhưng chúng kết hợp với nhau để tạo thành một kiến trúc AWS tốt.
+11,Elastic Load Balancer trong AWS
+ - ELB sẽ chia traffic ra nhiều server khác nhau để chia tải
+ - Expose ra 1 DNS để truy cập vào ứng dụng của bạn
+ - ELB cps thể tích hợp với rất nhiều dịch vụ của AWS
+ - Sử dụng health check cho instance của bạn
+ - Cung cấp HTTPS cho ứng dụng
+ - HA CrossZone
+ - ELB sẽ gửi 1 request định kì đến instance , nếu server phản hồi ok thì k sao , nếu response khác thì có nghĩa là server này đang có vấn đề , LB sẽ không gửi request đến server này nữa
+ - ELB cho phép chúng ta tạo 1 SG cho phép các request từ ngoiaf internet vào ELB qua cổng 80 (HTTP) ,443(HTTPS) và sẽ chuyển request này đến EC2 instance qua cổng 80 
+ - EC2 instance khi tạo SG chỉ nhận  request từ ELB qua cổng 80
+ - Như vậy sẽ không có 1 request nào từ internet có thể tấn công vào được EC2
+ - Mỗi Target group dùng để route requests đến 1 hoặc nhiều target đã được đăng ký.Khi bạn tạo 1 Listener rule , nghĩa là bạn đang xác định 1 Target Group và các đk của nó. Khi thỏa mãn điều kiện thì traffic đó sẽ được điều hướng đến đúng target group 
+ - Mỗi Target sẽ bao gồm : 
+	+ Instance : EC2 instance được xác định bởi instance ID
+	+ IP (phải là Private ID)	
+	+ Lambda : Lambda function
+ - Health check sẽ được thực hiện ở level target group
+12,Các loại Load Balancer 
+ - Classic Load Balancer - 2009 - CLB. * hiện tại không còn được sử dụng nhiều
+ - Application Load Balancer - 2016 - ALB 
+	+ Giải pháp này hoạt động ở tầng ứng dụng (Layer 7) phù hợp để cần bằng lưu lượng HTTP và HTTPS
+	+ Load Balancing đến nhiều HTTP ứng dụng qua nhiều machine
+	+ Hỗ trợ Redirect HTTP/HTTPS
+	+ Hỗ trợ route đến nhiều target group 
+	+ Rất phù hợp với ứng dụng micro service 
+	+ Chúng ta sẽ truy cập vào ALB thông qua 1 fixed hostname 
+ - Network Load Balancer - 2017 - NLB 
+	+ Hoạt động ở Layer 4 ,dùng để forward TCP&UDP traffic đến instance của bạn, có thể xử lý hàng triệu request trong 1s mà vẫn đảm bảo độ trễ thấp (~100ms  so với ~400ms của ALB)
+	+ Có 1 static IP mỗi AZ 
+	+ NLB không hỗ trợ free tier 
+ - Gateway Load Balancer - 2020 - GWLB 
+	+ Cho phép bạn triển khai , mở rộng , quản lý các ứng dụng 3th party network 
+	+ Hoạt đọng trong region , ở layer 3 
+	+ Sử dụng GENEVE protocol  trên port 6081
+ - Nên Sử dụng các phiên bản mới nhất để được hỗ trợ nhiều tính năng nhất có thể.
+ - Sticky Session là 1 tính năng load balancing cho website. Khi 1 user gửi request lần đầu tiên , LB sẽ chỉ định 1 server xử lý request và từ lần sau thì tất cả request của user này đều do server đó xử lý.
+ - Tính năng SS được sử dụng để đảm bảo 1 in-proc session sẽ không bị mất bởi các yêu cầu cho session được route đến các máy chủ khác nhau.Option này chỉ hoạt động với Classic Load Balancer & Application Load Balancer. Clinet phải hỗ trợ cookies để tính năng có thể hoạt động
+ - Cross-Zone Load Balancing có 2 option enable/disable
+	+ Enable : traffic sẽ được chia đều cho các target đã được đăng ký trong tất cả các AZ đã enable
+	+ Disable : traffic sẽ được phân chia đến các target đã đăng ký trong AZ 
+ - Tính năng Cross-Zone :
+	+ ALB :
+		_ luôn bật (không thể tắt)
+		_ không bị tính phí Inter AZ
+	+ NLB : 
+		_ Mặc định Disable 
+		_ Nếu Enable AWS sẽ tính phí Inter AZ
+	+ CLB : 
+		_ Mặc định Disable
+		_ Nếu Enable , không bị tính phí AZ
+13, Auto Scaling Group (ASG) trong AWS
+ - Là tính năng tự động mở rộng để đảm bảo rằng các phiên bản Amazon EC2 đủ để chạy các ứng dụng của bạn.
+ - Thành phần của ASG :
+	+ Launch configuration : config khi launch instance mới 
+		_ AMI + instance types
+		_ EC2 user data (optional)
+		_ EBS volumes
+		_ Security Groups
+		_ SSH key pair 
+	+ Min size (số lượng EC2 instance tối thiểu cần có)/ Max size (số lượng EC2 tối đa) / Initial Capacity
+	+ Network, subnets
+	+ Load Balancer (optional)
+	+ Scaling policies (đặt ra các policies để mở rộng , vd : tỉ lệ CPU , Network ,...)
+	+ Scheduled actions (Lịch trình để sử dụng scaling, vd : cứ 5 phút 1 lần , ...)
+ - Có thể tạo scaling policies dựa trên % CPU , Network , ... hoặc là Scheduled
+ - Cần sử dụng Launch configuration hoặc Launch Templates (version mới)
+ - Để update ASG chỉ cần update lại Launch configuration / Launch Templates
+ - IAM role attach vào ASG sẽ assign cho EC2 instances
+ - ASG miễn phí , chúng ta chỉ cần trả cho resource như EC2 , EBS ,...
+ 14 , Giới thiệu về VPC (Virtual Private Cloud)
+ - 1 vài concepts về network:
+	+ Khi 2 hay nhiều máy tính liên kết , giao tiếp với nhau được gọi là network
+	+ Resource trong network được chia nhỏ ra theo các thành phần Logic được gọi là subnets : private subnet và public subnet
+ - VPC trong AWS là môi trường mạng ảo riêng biệt , độc lập với môi trường Internet  dùng để quản lý resources AWS.
+ - Classes Inter-Domain Routing (CIDR) : 
+	+ Khi tạo VPC , bạn cần cung cấp cho VPC 1 AP range , được gọi là CIDR ( vd : 0.0.0.0/0)
+	+ CIDR là 1 set IP tiêu chuẩn dùng để định danh , phân bố cho resource ( vd : EC2) trong network
+	+ Tool convert CIDR -> IP range 
+	+ Subnet mask : định nghĩa số lượng bit có thể thay đổi trong IP 
+		_ vd /2, /16, /32
+		_ /8 <-> 255.0.0.0
+		_ /16 <-> 255.255.0.0
+		_ /24 <-> 255.255.255.0
+		_ /32 <-> 255.255.255.255
+ - Subnet là mạng con nằm trong AWS VPC của bạn . Mỗi subnet có 1 dải IP khác nhau
+	+ Khi chia subnet , bạn cần xác định 1 unique CIDR cho subnet đó.
+	+ CIDR subnet phải là tập con của CIDR VPC
+	+ Mỗi subnet phải nằm trong single AZ , không thể nằm rải rác ở multiple AZ
+ - Private Subnet 
+	+ bất kì traffic kể cả incoming hay outgoing đều không thể được, traffic của private subnet được định tuyến thông qua Network Address Translator (NAT) gateway 
+	+ Mỗi resource trong private subnet đều được gán cho 1 private IP , IP này chỉ được dùng trong nội bộ VPC 
+	+ 1 Route Table  định tuyến traffic đến /đi subnet , nó xác định được subnet là private hay public bằng cách ktra xem nó có đi qua Internet Gateway (IGW) hay không
+ - Public subnet 
+	+ traffic có thể access được ra ngoài và ngược lại
+	+ Resources trong public subnet được gán cho 1 public IP  và có thể truye cập từ bên ngoài internet
+	+ Outgoing traffic không được định tuyến qua NAT mà qua IGW
+	Note : bạn có thể thấy traffic của private subnet đi qua net-gw-xxx còn của public subnet đi qua igw-xxx
+ - IP addressing : Amazon sử dụng IPv4 cho instance và VPC CIDR 
+ - Private IP :
+	+ Khi mỗi instance launched, Amazon sẽ dùng Dynamic Host Configuration Protocol (DHCP) để gán cho nó 1 private IP
+	+ Chỉ dùng trong nội bộ
+	+ Khi instance stopped hay terminated , Amazon sẽ thu hồi IP đó và cấp phát lại sau khi instance được restart lại
+	+ Pricate IP trong AWS  chỉ allow trong range 10.0.0.0 -> 10.255.255.255
+ - Public IP : 
+	+ Khi EC2 launched , nó tự động được gán cho 1 public IP và DNS để truy cập từ bên ngoài internet
+	+ Khi instance stopped hay terminated, Amazon sẽ thu hồi lại API đó và cấp phát lại khi instance được restart
+	+ Để public IP không bị thay đổi khi stop/start => dùng Elastic Ip
+ - Elastic IP Address 
+	+ Là public IPv4 address  được allocate cho AWS Account, nó có thể được assign hoặc release
+	+ Khi không được gán cho instance nào hoặc instance stopped , Amazon sẽ tính phí theo giờ vì lãng phí. Amazon sẽ không tính phí nếu nó được assign cho instance đagn running
+	+ không thể dùng chung 1 Elastic IP address ở regions khác nhau
+15,Các components trong VPC 
+ - ENI (Elastic Network Interface) trong AWS 
+	+ ENI đại diện như 1 card mạng ảo (virtual network card)
+	+ Các thuộc tính chính của ENI :
+		_ 1 primary private IPv4 trong range IP của VPC/subnet 
+		_ 1 hay nhiều secondary private IPv4 trong range IP của VPC/subnet 
+		_ 1 Elastic IP address (IPv4) per private IPv4 address
+		_ 1 public Ipv4 address
+		_ 1 hay nhiều IPv6 address
+		_ 1 hay nhiều security group
+		_ 1 MAC address (Media Access Control)
+ - khi 1 instance EC2 được tạo trong VPC, Nó sẽ tự động tạo 1 Network Interface và attach vào EC2.
+ - NI default này là primary network interface và không thể detach NI này.
+ - Tuy nhiên bạn có thể tạo 1 NI khác được gọi là Secondary Network Interface , NI này cs thể detach hay attach vào instance khác
+ - Route table chứa những rule giúp định tuyến các network traffic, Mỗi VPC cần có 1 route table và nó chỉ có thể bị modify chứ không thể bị xóa
+ - Internet gateway giúp EC2 instance giao tiếp ra ngoài internet
+	+ Mỗi VPC chỉ có thểnattached tới 1 IGW và ngược lại 
+	+ nếu 1 subnet được liên kết đến route table và được route đến 1 IGW thì nó là public subnet
+	+ ngược lại nếu 1 subnet được liên kết trong route table mà không route đến IGW thì nó là private subnet
+ - Egress-Only IGW trong AWS chỉ làm việc với IPv6 , cho phép resource connect ra bên ngoài service nhưng prevent internet bên noài connect với resouce bên trong VPC 
+16,Giới thiệu Bastion hosts
+ - Là 1 special purpose compute để quant lí instance hoặc db private được đặt trên private subnet
+ - Được đặt trong public subnet của AWS VPC và hoạt động như một "gateway of login" giữa thế giới bên ngoài vào các private subnets.
+ - Mục đích của việc đặt Bastion host bên trong public subnet là để bảo mật việc đăng nhập vào ứng dụng của bạn và dữ liệu được lưu trữ trong private instance 
+ - Mọi lỗ lực kết nối đến các private instance đều sẽ thất bại nếu không kết nối qua public subnet của VPC.
+17,Giới thiệu Network Address Translation (NAT) trong AWS
+ - Khi các resouce trong private subnet muốn request ra bên ngoài internet, NAT sẽ thay đổi IP private của tài nguyên thành IP của mình cà request ra ngoài internet.Khi có response NAT sẽ gửi lại response cho private IP của resource tương ứng.
+ - NAT giống như 1 nhà vận chuyển request giữa Internet và EC2 instance trong private subnet 
+	+ Là EC2 instance được launch trong public subnet 
+	+ phải được attached Elastic IP 
+	+ route table phải được config để route traffic từ private subnet đến NAT instance 
+	+ AWS cung cấp AMI cho NAT instances , chúng ta có thể sử dụng nó khi launch instance mới 
+	+ NAT instances hiện nay không được sử dụng nhiều nhưng trong exam vẫn xuất hiện các câu hỏi về nó
+ - NAT gateway dùng để instance trong private subnet có thể connect với service bên ngoài VPC nhưng không tạo kết nỗi giữa instance và service đó.
+ - Có 2 loại :
+	+ public (default) :
+		_ Có thể connect ra bên ngoài internet
+		_ phải allocated Elastic IP 
+		_ Tính tiền theo giờ va bandwidth
+		_ Cần IGW để ra ngoài internet (private  subnet -> NAT GW -> IGW)
+	+ private :
+		_ có thể connect với VPC khác, không thể connect internet.Nếu IGW attach vào private NAT thì connection đó cũng sẽ bị drop 
+		_ không cần allocated Elastic IP
+ - NAT gateway được managed bởi AWS , vì vậy được recommended hơn là NAT Instance (managed biowr bạn)
+ - NAT gateway better avaiability và bandwidth cao hơn NAT instance (vì NAT instance còn dựa vào EC2 type)
+ - NAT GW trả tiền theo giờ và số lượng data tranfer , còn NAT instance thì trả tiền giống EC2 tùy thuộc vào kiểu máy , network 
+18,Bảo mật trong VPC 
+ - Amazon cung cấp 2 features để bảo mật (network security) và theo giõi (monitoring)
+ - Security group và NACL dùng cho network security , Flow logs dùng cho monitoring
+ - security group hoạt động như fire wall của EC2 
+ - NACL - network access controller list hoạt đông như fire wall của subnet
+ - Flow logs cung cấp thông tin về network traffic
+ - NACL giống như 1 firewall để control traffic vào/ra subnet 
+ - Mỗi subnet trong VPC được liên kết với ít nhất 1 NACL , khi mới tạo ra thì mặc định VPC sẽ tạo tự động 1 NACL
+ - VPC, NACL mặc định sẽ allow tất cả các traffic inbound và outbound
+ - Bạn có thể tự tạo NACL nhưng mặc định nó sẽ block tất cả các traffic inbound/outbound cho đến khi thêm rule mới 
+ - NACL có thể gán tới nhiều subnet nhưng mỗi subnet chỉ có thể được gán 1 NACL ở 1 thời điểm nghĩa là nếu bạn gán 1 NACL mới thì cái cũ sẽ bị gỡ bỏ
+ - 1 network ACL chứa 1 danh sách các rule được đánh số. Bắt đầu bởi rule có số nhỏ nhất để xác định lưu lượng mạng được phép ra vào. Số càng nhỏ độ ưu tiên càng cao, số lớn nhất có thể xử dụng là 32766
+ - NACL phên biệt rõ inbound, outbound rule.Bạn có thể allow hay deny rule
+ - Stateless có nghĩa là những traffic được allow ở inbound thì không tự động được allow ở outbound
+19,Giới thiệu VPC Peering , VPC Endpoints 
+ - VPC peering là cách liên hệ giữa 2 VPC với nhau và không phát sinh thêm chi phí. Khi 2 VPC được peering , chúng có thể giao tiếp với nhau bằng private IP 
+	+ Các VPC không được overlap CIDRs của nhau 
+	+ Có thể tạo VPC peering cross Account/Region
+	+ VPC peering không có tính bắc cầu (Transitive Peering)
+	 VD : VPC 1 và VPC 3 cùng được peering với VPC 2 , chúng không thể giao tiếp rtuwcj tiếp với nhau mà phải thông qua VPC 2
+ - Khi tạo VPC peering bạn cần confirm request.
+ - Cần chỉnh sửa lại Router để có thể connect đến instance giữa các VPC 
+ - VPC Endpoints (AWS PrivateLink) là các thiết bị ảo cso tính dự phòng và có thể scale theo chiều ngang (tăng số lượng nếu cần xử lý khối lượng công việc lớn)
+ - VPC Endpoints cho phép chúng ta có thể kết nối sử dụng private network thay vì public internet. Khi sử dụng VPC Endpoints sẽ giúp tăng tốc độ đường truyền , đồng thời giảm độ trễ vì không cần phải đi ra ngoài internet
+ - Các loại Èndpoint:
+	+ Interface Èndpoint
+		_ Cung cấp 1 ENI (Private IP)
+		_ Hỗ trợ hầu hết các dịch vụ của AWS
+	+ Gateway Endpoint:
+		_ Cung cấp 1 gateway và cần dùng như là 1 target trong route table 
+		_ Hỗ trợ cả S3 và DynamoDB
+20,Giới thiệu VPC Flow Logs 
+ - VPC Flow logs là tính năng giúp chúng ta có thể nắm bắt được thông tin IP traffic đến và đi Network Interface trong VPC 
+	+ VPC flow logs
+	+ Subnet flow logs 
+	+ Elastic Network Interface (ENI) flow logs 
+ - VPC flow logs giúp cho việc monitor các vấn đề về kết nối 
+ - Dữ liệu của flow logs có thể ghi trên S3 hoặc Cloudwatch Logs
+ - Có thể query dữ liệu của VPC Flow logs sử dụng Athena hoặc Cloudwatch Logs Insights
+21,Kết nối DataCenter tới AWS 
+ - 
