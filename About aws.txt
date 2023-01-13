@@ -290,7 +290,7 @@
 	+ Khi mỗi instance launched, Amazon sẽ dùng Dynamic Host Configuration Protocol (DHCP) để gán cho nó 1 private IP
 	+ Chỉ dùng trong nội bộ
 	+ Khi instance stopped hay terminated , Amazon sẽ thu hồi IP đó và cấp phát lại sau khi instance được restart lại
-	+ Pricate IP trong AWS  chỉ allow trong range 10.0.0.0 -> 10.255.255.255
+	+ Private IP trong AWS  chỉ allow trong range 10.0.0.0 -> 10.255.255.255
  - Public IP : 
 	+ Khi EC2 launched , nó tự động được gán cho 1 public IP và DNS để truy cập từ bên ngoài internet
 	+ Khi instance stopped hay terminated, Amazon sẽ thu hồi lại API đó và cấp phát lại khi instance được restart
@@ -337,13 +337,13 @@
 	+ public (default) :
 		_ Có thể connect ra bên ngoài internet
 		_ phải allocated Elastic IP 
-		_ Tính tiền theo giờ va bandwidth
+		_ Tính tiền theo giờ va bandwidth (băng thông) 
 		_ Cần IGW để ra ngoài internet (private  subnet -> NAT GW -> IGW)
 	+ private :
 		_ có thể connect với VPC khác, không thể connect internet.Nếu IGW attach vào private NAT thì connection đó cũng sẽ bị drop 
 		_ không cần allocated Elastic IP
  - NAT gateway được managed bởi AWS , vì vậy được recommended hơn là NAT Instance (managed biowr bạn)
- - NAT gateway better avaiability và bandwidth cao hơn NAT instance (vì NAT instance còn dựa vào EC2 type)
+ - NAT gateway better avaiability và bandwidth (băng thông)  cao hơn NAT instance (vì NAT instance còn dựa vào EC2 type)
  - NAT GW trả tiền theo giờ và số lượng data tranfer , còn NAT instance thì trả tiền giống EC2 tùy thuộc vào kiểu máy , network 
 18,Bảo mật trong VPC 
  - Amazon cung cấp 2 features để bảo mật (network security) và theo giõi (monitoring)
@@ -385,4 +385,170 @@
  - Dữ liệu của flow logs có thể ghi trên S3 hoặc Cloudwatch Logs
  - Có thể query dữ liệu của VPC Flow logs sử dụng Athena hoặc Cloudwatch Logs Insights
 21,Kết nối DataCenter tới AWS 
- - 
+ - AWS hỗ trợ bạn có thể kết nối một cách bòa mật giữa môi trường AWS tới các DataCenter tại chỗ (datacenter của cty bạn )
+ - Những dịch vụ đó bao gồm :
+	a, AWS site to site VPN :
+		+ Mặc định khi launch 1 EC2 instance trong VPC thí không thể giao tiêps được với remote Network của bạn
+		+ Để access đến remote network (on-premises net work ) chúng ta cần tạo 1 Site-to-Size VPn Connection
+		+ Chúng ta cần có VPN Gateway và Customer Gateway trên on-premises network , VPN Connection.Vpn Connection sẽ được mã hóa để đảm bảo về vấn đề bảo mật.
+			_ Virtual Private Gateway (VGW) : được tạo ra và attach vào VPC mà ban muốn tạo Site-toSite VPN Connection
+			_ Customer Gateway (CGW) : có thể là phần mềm hay thiết bị trên Customer side trong VPN Connection 
+		Note : CGW cần có 1 public IP hoặc thông qua NAT để kết nối , Subnet trong VPC cần route đến VGW , Nếu muốn access đến EC2 instance cần thêm protocol ICMP trong security groups 
+	b, AWS Direct Connect (DX):
+		+ Hiểu đơn giản , DX cung cấp một đường truyền chuyên dụng, ổn định , được thiết lập riêng giữa AWS và DataCenter hay office.
+		+ Khi sử dụng Direct Connection bạn không kết nối qua Internet mà kết nối trực tiếp với AWS , vì vậy đường truyền có thể lên tới 10Gbps
+		+ Use cases : 
+			_ Yêu cầu bandwidth (băng thông)  cao , làm việc với data set lớn mà yêu cầu chi phí thấp , Việc chuyển các file dữ liệu với dataset lớn qua Internet rất tốn kém.
+			_ Phản hồi dữ  liệu real-time , độ trễ nhỏ 
+			_ Các ứng dụng Cloud Native (Cloud _ On-premises)
+		+ Direct Connect virtual interfaces 
+			_ Private virtual interface : truy cập đến VPC qua private Ip
+			_ public virtual interface : truy cập đến dịch vụ của AWS từ DataCenter của bạn. Cho phép đi ra ngoài public network  thông qua Interface thay vì Internet
+			Note : thời gian setup connection thường sẽ mất nhiều hơn 1 tháng
+	c, AWS Direct Connect Gateway :
+		+ Nếu bạn muốn setup Direct Connect tới 1 hoặc nhiều VPC ở các region khác nhau(chung account ),thì cần dùng đến Direct Connection Gateway.
+22,Giới thiệu PrivateLink và ClassicLink
+ - Expose service từ VPC của bạn đến các VPC khác có 2 cách :
+	+ Option 1 : để cho service đó được public , cách này sẽ để service của bạn có thể truy cập từ internet. Tuy nhiên sẽ không đảm bảo an toàn và khó có thể quản lý truy cập.
+	+ Option 2 : sử dung VPC peering 
+		_ cần tạo nhiều VPC peering
+		_ khi tạo VPC peering , tất cả các network sẽ được mở giữa các VPC tuy nhiên nếu muốn expose chỉ 1 application, VPC peering không phải là 1 lựa chọn tốt
+ - AWS PrivateLink (VPC Endpoint Services) là 1 trong các kết nối an toàn giữa VPCs , AWS Service , hay On-premises network của bạn. Kết nối này không đi qua internet , nó sẽ nằm trong network của AWS
+	+ Có thể expose service tới 1000s VPC (chung account hoặc account khác nhau)
+	+ Không cần phải sử dụng VPC peering , IGW, NAT , Route table ,...
+	+ Cần có Network Load Balancer (Service VPC ) và ENI (Customer VPC) hoặc GWLB (Gateway load balancer)
+ - AWS ClassicLink (Không sử dụng được nữa) : từ trước tháng 12 / 2013 chúng ta có thể tạo EC2-Classic , nó là loiaj instance chạy trong single network và được chia sẻ với khách hàng.ClassicLink cho phép kết nối EC2-Classic tới VPC trong account của bạn 
+23,Giới thiệu Transit Gateway 
+ - TG giống như 1 trung tâm chuyển tuyến mạng mà bạn có thể sử dụng để kết nối VPCs và on-premises networks
+ - Khi không sử dụng TG , chúng ta phải tạo nhiều Site-to-Size hay peering đến các VPCs và on-premises network,... ;TG đơn giản hóa quá trình đó , các kết nối sẽ chỉ đi qua 1 central hub
+ - Sử dụng cho kết nối giữa hàng nghìn VPC và on-premises connection
+ - Có thể cross-region
+ - có thể cross-account khi xử dụng Resouce Access Manager (RAM)
+ - Route table : có thể giới hạn những VPC nào có thể giao tiếp với nhau 
+ - có thể kết hợp với Direct connection, VPN Connection
+ - có hỗ trợ IP Multicast
+ - Transit Gateway : Site-to-Size VPN ECMP (Equal-cost Multi-path routing)
+	+ Đây là chiến lược để cho phép chuyển tiếp gói tin qua nhiều đường nhất 
+	+ có thể attach nhiều Site-to-Size VPN connection tới Transit Gateway
+	+ Usecase : Tạo ra nhiều Site-to-Size VPN connection để tăng bandwidth(băng thông) kết nối đến
+24,Giới thiệu Amazon RDS (Relational Database Service )
+ - là dịch vụ quản lý db sử dụng sql 
+ - Types : 
+	+ Postgres
+	+ Mysql 
+	+ MariaDB 
+	+ MSSQL server 
+	+ Aurora (hàng của amazon)
+ - RDS backup 
+	+ Tự động backup : Daily Full backup transaction log được back-up bởi RDS mỗi 5 phút => có thể restore lại data. Data sẽ được lưu lại (retention) 7 ngày (có thể tăng lên , tối đa 35 ngày )
+	+ DB snapshots : Thực hiện bởi user Retention tùy ý 10 ngyaf , 1 tháng, 6 tháng , ...
+ - RDS Storage Auto Scaling 
+	+ Tự động gia tăng storage của RDS DB Instance 
+	+ Bạn có thể set Maximum Storage Threshold
+	+ Phù howpk cho ứng dụng không biết trước workload (số lượng công việc mà 1 máy có thể xử lý được trong 1 khoảng thời gian nhất định)
+25,Giới thiệu Read Replicas (Read only)
+ - Read Replicas giúp bạn scaling việc read, cho phép bạn tạo 1 hoặc nhiều bản copies của db instance trong cùng hoặc khác region
+ - Handle việc bạn có 1 RDS db phải tiếp nhận nhiều request , RDS instance sẽ ASYNC replicated các bản sao khác 
+	+ Tối đa 5 Read Replicas , mỗi Read Replicas có 1 DNS endpoint khác nhau 
+	+ Cross AZ / region
+	+ Read Replicas có thể promotes thành own DB 
+	+ Application cần thay đổi connection string để connect được read replicas 
+ - Use case :
+	+ Business reporting hoặc data warehouse , chúng ta sẽ tạo ra bản sao từ DB production , sau đó thực hiện query để analy Cost 
+	+ Nếu trong cùng 1 region thì giá sẽ free 
+	+ Cross AZ ở khác region thì AWS sẽ tính phí 
+ - RDS Multi AZ (Disaster  Recovery) cung cấp khả năng sẵn sàng cho DB của bạn trong 1 Region , data sẽ đươck SYNC replicated tới các standby instance ở AZ khác 
+ Note : SYNC repication sử dụng chung 1 endpoint , không sử dụng cho scaling , Read replicas có thể setup như là Multi AZ cho Disaster Recovery
+ - RDS from single AZ to multi AZ : 
+	+ Zero downtime 
+	+ Chỉ cần click "modify"
+	+ Các bước : 
+		_ tạo 1 snapshot
+		_ DB mới được restored từ snapshot sang AZ mới
+		_ Synchronyze giữa 2 DB 
+26,Giới thiệu Amazon Aurora 
+ - là công nghệ AWS phát triển được tương thích với MySQL và PostgreSQL
+	+ Cả postgres và mysql đều được support bởi Aurora DB (drive sẽ luôn họa động nếu Aurora là postgres hay mysql db)
+	+ Aurora là "AWS Cloud optimized ", được cho rằng x5 performance so với MySQL trên RDS , X3 Postgres
+	+ Aurora auto scale storage , bạn không cần phải lo nghĩ đến việc monitor storage 
+	+ Aurora có 15 replicas (MySQL có 5)
+	+ Cót cao hơn RDS ~20%
+ - Aurora High Availability và Read Scaling 
+	+ 6 bản copy dữ liệu của bạn cross 3 AZ
+	+ 1 Aurora instance take wire (master)
+	+ tự động phục hồi < 30s nếu master bị lỗi hay có vấn đề 
+	+ master + upto 15 replicas (for read)
+	+ Hỗ trợ cross Region 
+ - Aurora DB Cluste là 1 shared storage volume có thể lưu trữ dữ liệu từ 10G -> 64T, Cluster endpoint (writer endpoint) được trỏ đến master, Read endpoint point đễn connection Load Balancing các Replicas 
+ - Aurora advanced concepts 
+	+ Auto scaling : khi có nhiều requesr đến reader endpoint dẫn đến việc DB instance tăng CPU usage, do đó cần setup Replicas Auto Scaling. Read endpoint cũng sẽ tự động extend để cover Replicas mới
+	+ Custom Endpoint : xác định 1 nhóm các Aurora instance và coi như là 1 Custom endpoint (vd chọn ra 1 số replicas nhất đinh để chỉ chạy các query phân tích) , Các reader endpoint đó sẽ chỉ có thể truy cập qua custom endpoint sau khi custom endpoint đã được định nghĩa.	
+	+ Serverless : 
+		_ Tự động scaling dựa trên lượng sử dụng thực tế 
+		_ Không phù hợp với ứng dụng không thường xuyên hoặc không biết trước được workload
+		_ Không cần có plan về Capacity
+		_ Giá cả trả theo giây xử dụng 
+	+ Multi-master 
+		_ trong trường hợp bạn muốn ngay lập tức chuyển đổi dự phòng (failover)cho writter node (HA)
+		_ các Read Replicas tự động promote lên Master 
+ - Global Aurora 
+	+ Aurora Cross Region Read Replicas : Hữu ích cho Disaster Recovery (DR)
+	+ Aurora Global Database 
+		_ 1 primary Region (read/write)
+		_ up to 5 secondary (Read-only) region , replicas là < 1s
+		_ Up to 16 Read Replicas / mỗi secondary region 
+		_ Giảm thiểu về độ trễ 
+		_ Khi có vấn đề ở Primary Region , tự động promote region khác với RTO < 1 m (Recovery Time Objective)
+27,Elasticache là gì 
+ - là dịch vụ bộ nhớ đệm được quản lý dành cho Redis và Memcached 
+ - Giúp giảm thiểu thời gian load dữ liệu vì load từ cache chắc chắn sẽ nhanh hơn 
+ - Phân biệt Redis (Remote Dictionary Server) và Mencached 
+	+ REDIS : 
+		_ Read Replicas để scale việc đọc , high avaiability
+		_ có tính năng backup và restore 
+	+ MEMCACHED : 
+		_ Multi-node cho việc phân vùng data , cho phép mở rộng thêm dữ liệu khi nhu cầu tăng lên
+		_ Memcached không có tính persis. Tức là 1 khi xóa hẳn , không có backup 
+		_ Multi-thread 
+28,Giới thiệu Redshift
+ - Là dịch vụ lưu trữ dữ liệu quy mô hàng petabyte nhanh và mạnh 
+ - Được base trên PostgreSQL , tuy nhiên không được dùng trong OTPL (Online Transactional Processing)
+ - Redshift là OTPL - dùng cho analystic và data warehousing 
+ - Lưu trữ dữ liệu dưới dạng cột (columm)
+ - Hỗ trợ màn hình SQL interface để tạo các câu query truy vấn 
+ - Masively Parallel Query Execution (MPP)
+ - Analystic/BI (Business intelligence)/ Data Warehouse 
+ - Câú trúc của Redshift
+	+ Cluster : đây là thành phần cốt lõi trong kiến trúc của Redshift. Mỗi Cluster bao gồm 1 hoặc nhiều nodes thực hiện việc tính toán. Trong 1 cluster sẽ có nhiều DB 
+	+ Leader node : xử lý giao tiếp với các layer bên ngoài , ví dụ như thực hiện query , tổng hợp kết quả 
+	+ Compute node : thực thi các câu truy vấn , gửi lại kết quả cho leader node 
+	+ Node slices : mỗi 1 compute node tiếp tục được chia nhỏ ra thành các node slice . Mỗi 1 node slice được phân chia đều CPU , memory và storage từ compute node đó 
+	+ Redshift Spectrum : truy vấn dữ liệu trực tiếp tới Amazon S3 mà không cần load dữ liệu vào các bảng của Redshift
+	+ Backup & Restore , security VPC/IAM/KMS, Monitoring 
+ - Redshift - snapshot & DR (Disaster Recovery)
+	+ Redshift không có cơ chế AZ 
+	+ cần sử dụng snapshot để backup cluster và store trên S3
+	+ Bạn có thể restore 1 snapshot ra 1 cluster mới 
+	+ Tạo snapshot có thể tự động hoặc bằng tay 
+		_ Automated : bạn có thể tạo schedule tạo snapshot mỗi 8h/ mỗi 5g ,....
+		_ Manual bạn có thể tạo snapshot thủ công bất cứ lúc nào
+	+ Bạn có thể config Amazon Redshift tự động copy snapshot của 1 cluster sang 1 region khác 
+29,Giới thiệu Glue 
+ - Là dịch vụ serverless giúp quản lý : Extract, Transform và Load (ETL) dữ liệu. Hữu ích với việc chuẩn bị , transform dữ liệu phục vụ cho analystic
+ - Glue Data Catalog 
+	+ là nơi lưu trữ metadata của data nguồn
+	+ VD bạn muốn transform data từ Amazon RDS 
+		_ step 1: crawler sẽ thực hiện crawl data của db trên RDS , crawler sẽ lấy được data như schema , định nghĩa của table , các table ,...
+		_ step 2: sau khi crawl , thông tin metadata sẽ được lưu vào Data Catalog theo dạng bảng 
+		_ step 3: Data trên Catalog này sẽ được sử dụng bởi Blue jobs (ETL), hay Amazon athena 
+30,Giới thiệu Neptune 
+ - Neptune là dịch vụ Graph db trong AWS 
+ - Được sử dụng trong bài toán dữ liệu có mối quan hệ phức tạp như Social Networking
+ - High avaiable cross 3 AZ , có thể có 15 Read replicas
+ - Trả phí theo số lượng node bạn dùng 
+31,Giới thiệu về S3 (Simple storage service )
+ - là dịch vụ lưu trữ dữ liệu đơn giản do Amazon cung cấp , nó cung cấp khả năng mở rộng , tính khả dụng của dữ liệu , bảo mật cao.
+ - S3 Buckets và Object : S3 cho phép người dùng có thể lưu trữ Object (files) trong các Buckets (directories)
+ - S3 Buckets :
+	+
+ 
